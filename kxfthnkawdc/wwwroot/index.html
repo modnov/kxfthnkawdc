@@ -8,14 +8,14 @@
     <div id="chat_messages">
         <div id="message_container"
              v-for="message in messages"
-             v-bind:style="message.User.Id % 2 === 0 ? { backgroundColor: 'lightpink' } :
+             v-bind:style="message.user.id % 2 === 0 ? { backgroundColor: 'lightpink' } :
                 [{ backgroundColor: 'lightblue'}, {horizAlign: 'left' }, {marginLeft: 'auto' }, {marginRight: '6px' }]">
             <div id="message_content">
-                <div id="message_sender" v-bind:style="message.User.Id % 2 === 1 ? { textAlign: 'right' } : ''">
-                    <span>message.User.Name</span>
+                <div id="message_sender" v-bind:style="message.user.id % 2 === 1 ? { textAlign: 'right' } : ''">
+                    <span>{{message.user.name}}</span>
                 </div>
                 <div id="message_text">
-                    <span>message.Content</span>
+                    <span>{{message.content}}</span>
                 </div>
             </div>
         </div>
@@ -24,60 +24,51 @@
         <input id="message_input" v-on:keyup.enter="send"/>
         <button id="message_send_btn" v-on:click="send">Send</button>
     </div>
-    <div id="new_message_input_test">
-        <input id="message_input_test" v-on:keyup.enter="send_test"/>
-        <button id="message_send_btn_test" v-on:click="send_test">Send</button>
-    </div>
 </div>
 <script>
-    Date.prototype.today = function () {
-        return ((this.getDate() < 10) ? "0" : "") + this.getDate() + "/" + (((this.getMonth() + 1) < 10) ? "0" : "") + (this.getMonth() + 1) + "/" + this.getFullYear();
-    }
-
-    Date.prototype.timeNow = function () {
-        return ((this.getHours() < 10) ? "0" : "") + this.getHours() + ":" + ((this.getMinutes() < 10) ? "0" : "") + this.getMinutes() + ":" + ((this.getSeconds() < 10) ? "0" : "") + this.getSeconds();
-    }
     let app = new Vue({
         el: '#chat_window',
         data: {
-            messages: [{
-                "Id": 1,
-                "User": {"Id": 1, "Name": "kxfthnkawdc"},
-                "Content": "Hi, v1ksekk!",
-                "Date": "2023-08-27T00:29:20.154Z"
-            }, {
-                "Id": 2,
-                "User": {"Id": 2, "Name": "v1ksekk"},
-                "Content": "Hey, kxfthnkawdc! How are you?",
-                "Date": "2023-08-27T00:30:58.133Z"
-            }, {
-                "Id": 3,
-                "User": {"Id": 1, "Name": "kxfthnkawdc"},
-                "Content": "I'm fine! What about you?",
-                "Date": "2023-08-27T00:35:06.364Z"
-            }]
+            messages: []
+
+        },
+        created: function () {
+            fetch('/Chat', {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+            })
+                .then(async data => {
+                    this.messages = await data.json();
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                })
         },
         methods: {
-            send: function () {
+            send: async function () {
                 let text = document.getElementById('message_input').value
                 document.getElementById('message_input').value = ""
-                this.messages.push({
-                    'Id': 1,
-                    'User': {'Id': 1, 'Name': 'kxfthnkawdc'},
-                    'Content': text,
-                    'Date': new Date().today() + " @ " + new Date().timeNow()
+
+                const ChatMessage = {
+                    user: {
+                        id: 1
+                    },
+                    content: text,
+                    date: new Date().toJSON()
+                }
+
+                fetch("/Chat", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: await JSON.stringify(ChatMessage)
                 })
-                //JS.InvokeAsync<string>("DbSendMessage").Result.ToString();
-            },
-            send_test: function () {
-                let text = document.getElementById('message_input_test').value
-                document.getElementById('message_input_test').value = ""
-                this.messages.push({
-                    'Id': 69,
-                    'User': {'Id': 2, 'Name': 'v1ksekk'},
-                    'Content': text,
-                    'Date': new Date().today() + " @ " + new Date().timeNow()
-                })
+                    .catch(error => console.log(error))
             }
         }
     })

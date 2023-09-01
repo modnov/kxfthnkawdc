@@ -1,6 +1,6 @@
 html {
     font-size: 16px;
-    font-family: "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Apple Color Emoji", "Segoe UI", Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
 }
 
 input:focus,
@@ -30,6 +30,7 @@ body {
     border-color: gray;
     border-top-left-radius: 8px;
     border-bottom-left-radius: 8px;
+    text-wrap: normal;
 }
 
 #chat_messages {
@@ -39,7 +40,7 @@ body {
 }
 
 #new_message_input {
-    width: 500px;
+    width: 502px;
     margin-left: -1px;
     height: 32px;
     border-top: 1px solid;
@@ -47,7 +48,7 @@ body {
 }
 
 #message_input {
-    width: 430px;
+    width: 500px;
     border-bottom-left-radius: 8px;
     outline: 1px;
     height: 32px;
@@ -56,7 +57,7 @@ body {
 }
 
 #message_send_btn {
-    width: 70px;
+    width: 80px;
     border-width: 1px;
     height: 32px;
 }
@@ -68,18 +69,19 @@ body {
     margin-left: 6px;
     margin-right: auto;
     margin-top: 20px;
-    border-radius: 5px;
+    border-radius: 10px;
 }
 
 #message_content {
-    margin-left: 3px;
-    margin-right: 3px;
-    margin-top: 2px;
+    margin-left: 4px;
+    margin-right: 4px;
+    margin-top: 4px;
 }
 
 #message_sender {
     font-weight: bolder;
     font-size: 14px;
+    margin-top: 4px;
 }
 
 #new_message_input_test {

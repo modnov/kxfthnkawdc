@@ -1,5 +1,7 @@
+using System.Runtime.InteropServices.JavaScript;
 using kxfthnkawdc.Models;
 using Microsoft.AspNetCore.Mvc;
+using Npgsql;
 
 namespace kxfthnkawdc.Controllers;
 
@@ -17,8 +19,7 @@ public class ChatController : Controller
     }
 
     [HttpGet]
-    [Route("Messages")]
-    public IEnumerable<ChatMessage> GetMessages()
+    public IEnumerable<ChatMessage> Get()
     {
         using var command = _dbContext.DataSource.CreateCommand("select * from messages order by id");
         using var messageReader = command.ExecuteReader();
@@ -40,27 +41,35 @@ public class ChatController : Controller
         return messages;
     }
 
-    [HttpGet]
-    [Route("Users")]
-    public IEnumerable<ChatMessage> GetUsers()
+    [HttpPost]
+    public async Task Post(ChatMessage message)
     {
-        using var command = _dbContext.DataSource.CreateCommand("select * from messages order by id");
-        using var messageReader = command.ExecuteReader();
-        var messages = new List<ChatMessage>();
-        while (messageReader.Read())
+        try
         {
-            messages.Add(new ChatMessage
-            {
-                Id = (int)messageReader["id"],
-                Content = (string)messageReader["content"],
-                Date = (DateTime)messageReader["date"],
-                User = new User()
+            using var command =
+                new NpgsqlCommand($"insert into messages (sender_id, content, date) values ($1, $2, $3)", _dbContext.Connection)
                 {
-                    Id = (int)messageReader["sender_id"]
-                }
-            });
+                    Parameters =
+                    {
+                        new()
+                        {
+                            Value = message.User.Id
+                        },
+                        new()
+                        {
+                            Value = message.Content
+                        },
+                        new()
+                        {
+                            Value = message.Date
+                        }
+                    }
+                };
+            //await command.ExecuteNonQueryAsync();
         }
-
-        return messages;
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+        }
     }
 }
