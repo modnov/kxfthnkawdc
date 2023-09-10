@@ -1,0 +1,64 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Login</title>
+</head>
+<body>
+<div>
+    <style>
+        label {
+            display: block;
+        }
+
+        input[type='submit'],
+        label {
+            margin-top: 1rem;
+        }
+    </style>
+    <div>
+        <label>Username:</label>
+        <input type="text" id="username" required/>
+    </div>
+
+    <div>
+        <label>Password:</label>
+        <input type="password" id="password" minlength="8" required/>
+    </div>
+
+    <input type="submit" value="Login" onclick="send()"/>
+
+    <p id="error"></p>
+</div>
+</body>
+<script>
+    async function send() {
+        const loginData = {
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+        }
+
+        let response = await fetch("/login/verify", {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'username': loginData.username,
+                'password': loginData.password
+            }
+        })
+            .catch(error => {
+                document.getElementById('error').innerText = 'Wrong name or password';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            })
+        if (response.status === 200) {
+            window.location.href = '/chat.html';
+        } else {
+            document.getElementById('error').innerText = 'Wrong name or password';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+    }
+</script>
+</html>

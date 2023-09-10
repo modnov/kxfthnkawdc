@@ -2,9 +2,9 @@ namespace kxfthnkawdc.Models;
 
 public sealed class User
 {
-    public required int Id { get; init; }
-    private readonly ApplicationDbContext _dbContext = new ApplicationDbContext();
+    private readonly ApplicationDbContext _dbContext;
 
+    public required int Id { get; init; }
     public string Name
     {
         get
@@ -13,9 +13,16 @@ public sealed class User
             messagesData.Parameters.AddWithValue("id", Id);
             using var reader = messagesData.ExecuteReader();
             if(reader.Read())
-                return (string)reader["Name"];
+                return (string)reader["name"];
             throw new Exception("User not found");
         }
         init => _ = value;
+    }
+
+    public string Password { get; private set; }
+
+    public User(ApplicationDbContext dbContext)
+    {
+        _dbContext = dbContext;
     }
 }

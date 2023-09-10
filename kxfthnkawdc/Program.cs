@@ -1,6 +1,10 @@
 using System.IO.Compression;
+using kxfthnkawdc.Hub;
 using kxfthnkawdc.Models;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Mvc;
+
+[assembly: ApiController]
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,16 +16,11 @@ builder.Services.AddResponseCompression(options =>
     options.Providers.Add<BrotliCompressionProvider>();
     options.Providers.Add<GzipCompressionProvider>();
 });
-builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
-{
-    options.Level = CompressionLevel.SmallestSize;
-});
-builder.Services.Configure<GzipCompressionProviderOptions>(options =>
-{
-    options.Level = CompressionLevel.SmallestSize;
-});
+builder.Services.Configure<BrotliCompressionProviderOptions>(options => options.Level = CompressionLevel.SmallestSize);
+builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Level = CompressionLevel.SmallestSize);
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
+builder.Services.AddSignalR();
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(
@@ -32,11 +31,27 @@ builder.Services.AddCors(options =>
             policy.AllowAnyOrigin();
         });
 });
+builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddSingleton<ApplicationDbContext>();
 
 var app = builder.Build();
 
 app.UseHttpsRedirection();
+
+app.UseSession();
+
+app.MapControllers();
+
+app.Use((context, next) =>
+{
+    if (!context.Session.Keys.Contains("username") && !context.Request.Path.Value.StartsWith("/login"))
+    {
+        context.Request.Path = "/login.html";
+        context.Response.Redirect("/login.html", true);
+    }
+    
+    return next.Invoke();
+});
 
 app.UseRouting();
 
@@ -45,10 +60,8 @@ app.UseCors();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
-app.UseSession();
-
 app.UseResponseCompression();
 
-app.MapControllers();
+app.MapHub<ChatHub>("/chat");
 
 app.Run();

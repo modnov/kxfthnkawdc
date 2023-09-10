@@ -1,76 +1,10 @@
+<html lang="ru">
 <head>
-    <title>kxfthnkawdc</title>
-    <link rel="stylesheet" type="text/css" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
+    <title><3 <3 <3</title>
+    <meta charset="UTF-8"/>
 </head>
 <body>
-<div id="chat_window">
-    <div id="chat_messages">
-        <div id="message_container"
-             v-for="message in messages"
-             v-bind:style="message.user.id % 2 === 0 ? { backgroundColor: 'lightpink' } :
-                [{ backgroundColor: 'lightblue'}, {horizAlign: 'left' }, {marginLeft: 'auto' }, {marginRight: '6px' }]">
-            <div id="message_content">
-                <div id="message_sender" v-bind:style="message.user.id % 2 === 1 ? { textAlign: 'right' } : ''">
-                    <span>{{message.user.name}}</span>
-                </div>
-                <div id="message_text">
-                    <span>{{message.content}}</span>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div id="new_message_input">
-        <input id="message_input" v-on:keyup.enter="send"/>
-        <button id="message_send_btn" v-on:click="send">Send</button>
-    </div>
-</div>
-<script>
-    let app = new Vue({
-        el: '#chat_window',
-        data: {
-            messages: []
-
-        },
-        created: function () {
-            fetch('/Chat', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-            })
-                .then(async data => {
-                    this.messages = await data.json();
-                })
-                .catch(error => {
-                    console.error('Error fetching data:', error);
-                })
-        },
-        methods: {
-            send: async function () {
-                let text = document.getElementById('message_input').value
-                document.getElementById('message_input').value = ""
-
-                const ChatMessage = {
-                    user: {
-                        id: 1
-                    },
-                    content: text,
-                    date: new Date().toJSON()
-                }
-
-                fetch("/Chat", {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    },
-                    body: await JSON.stringify(ChatMessage)
-                })
-                    .catch(error => console.log(error))
-            }
-        }
-    })
-</script>
+<h2>Запомните, твари, я люблю Вику!!<br></h2>
+<img src="love.jpeg" width="500">
 </body>
+</html>

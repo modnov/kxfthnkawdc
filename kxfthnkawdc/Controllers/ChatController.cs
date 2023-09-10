@@ -1,13 +1,13 @@
 using System.Runtime.InteropServices.JavaScript;
+using System.Web;
 using kxfthnkawdc.Models;
 using Microsoft.AspNetCore.Mvc;
 using Npgsql;
 
 namespace kxfthnkawdc.Controllers;
 
-[ApiController]
-[Route("[controller]")]
-public class ChatController : Controller
+[Route("chat")]
+public class ChatController : ControllerBase
 {
     private readonly ILogger<ChatController> _logger;
     private readonly ApplicationDbContext _dbContext;
@@ -19,7 +19,8 @@ public class ChatController : Controller
     }
 
     [HttpGet]
-    public IEnumerable<ChatMessage> Get()
+    [Route("messages")]
+    public IEnumerable<ChatMessage> GetMessages()
     {
         using var command = _dbContext.DataSource.CreateCommand("select * from messages order by id");
         using var messageReader = command.ExecuteReader();
@@ -31,41 +32,46 @@ public class ChatController : Controller
                 Id = (int)messageReader["id"],
                 Content = (string)messageReader["content"],
                 Date = (DateTime)messageReader["date"],
-                User = new User()
+                User = new User(_dbContext)
                 {
                     Id = (int)messageReader["sender_id"]
                 }
             });
         }
 
+        int clientId = Request.HttpContext.Session.GetInt32("id")!.Value;
+        Response.Headers.Add("client_id", clientId.ToString());
         return messages;
     }
 
     [HttpPost]
-    public async Task Post(ChatMessage message)
+    [Route("send")]
+    public async Task PostMessage([FromHeader] string content)
     {
         try
         {
-            using var command =
-                new NpgsqlCommand($"insert into messages (sender_id, content, date) values ($1, $2, $3)", _dbContext.Connection)
-                {
-                    Parameters =
-                    {
-                        new()
-                        {
-                            Value = message.User.Id
-                        },
-                        new()
-                        {
-                            Value = message.Content
-                        },
-                        new()
-                        {
-                            Value = message.Date
-                        }
-                    }
-                };
-            //await command.ExecuteNonQueryAsync();
+            using var command = _dbContext.DataSource.CreateCommand(
+                $"insert into messages (sender_id, content, date) values (@sender_id, @content, @date)");
+
+            command.Parameters.Add(new NpgsqlParameter
+            {
+                ParameterName = "sender_id",
+                Value = Request.HttpContext.Session.GetInt32("id")!.Value
+            });
+            command.Parameters.Add(new NpgsqlParameter
+            {
+                ParameterName = "content",
+                Value = HttpUtility.UrlDecode(content)
+            });
+            command.Parameters.Add(new NpgsqlParameter
+            {
+                ParameterName = "date",
+                Value = DateTime.Now
+            });
+
+            await command.ExecuteNonQueryAsync();
+            
+            Response.Redirect("/messages");
         }
         catch (Exception e)
         {
