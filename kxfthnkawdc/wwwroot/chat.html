@@ -1,0 +1,90 @@
+<head>
+    <title>kxfthnkawdc</title>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
+</head>
+<body>
+<div id="chat_window">
+    <div id="chat_messages">
+        <div id="message_container"
+             v-for="message in messages"
+             v-bind:style="message.user.id  !== client_id ? { backgroundColor: 'lightpink' } :
+                [{ backgroundColor: 'lightblue'}, {horizAlign: 'left' }, {marginLeft: 'auto' }, {marginRight: '6px' }]">
+            <div id="message_content">
+                <div id="message_sender" v-bind:style="message.user.id === client_id ? { textAlign: 'right' } : ''">
+                    <span>{{message.user.name}}</span>
+                </div>
+                <div id="message_text">
+                    <span>{{message.content}}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="new_message_input">
+        <input id="message_input" v-on:keyup.enter="send"/>
+        <button id="message_send_btn" v-on:click="send">Send</button>
+    </div>
+</div>
+<script>
+    let hubConnection
+    let app = new Vue({
+        el: '#chat_window',
+        data: {
+            messages: [],
+            client_id: 0,
+        },
+        mounted: async function () {
+            await this.updateMessages()
+        },
+        created: async function () {
+            hubConnection = new signalR.HubConnectionBuilder().withUrl("chatsignalr").withAutomaticReconnect().build()
+            hubConnection.on("Receive", (message) => {
+                this.messages.push(message)
+            })
+            hubConnection.start()
+                .then(function () {
+                    console.log('Connection started');
+                })
+
+            var elem = document.getElementById('chat_messages');
+            elem.scrollTo(0, elem.scrollHeight);
+        },
+        methods: {
+            updateMessages: async function () {
+                await fetch('/chat/messages', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                })
+                    .then(async data => {
+                        this.messages = await data.json();
+                        this.client_id = await parseInt(data.headers.get("client_id"))
+                    })
+
+                var elem = document.getElementById('chat_messages');
+                elem.scrollTo(0, elem.scrollHeight);
+            },
+            send: async function () {
+                let text = document.getElementById('message_input').value
+                document.getElementById('message_input').value = ""
+
+                await fetch("/chat/send", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'content': encodeURIComponent(text)
+                    }
+                })
+
+                this.updateMessages();
+                await hubConnection.invoke("Send", text)
+            }
+        }
+    })
+</script>
+</body>

@@ -4,11 +4,11 @@ namespace kxfthnkawdc.Models;
 
 public sealed class ApplicationDbContext
 {
-    private const string ConnectionString = "Host=178.162.94.95;Database=kxfthnkawdc;Username=kxfthnkawdc;Password=kxfthnkawdc";
+    private readonly string _connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")!;
     public NpgsqlDataSource DataSource;
 
     public ApplicationDbContext()
     {
-        DataSource = new NpgsqlDataSourceBuilder(ConnectionString).Build();
+        DataSource = new NpgsqlDataSourceBuilder(_connectionString).Build();
     }
 }

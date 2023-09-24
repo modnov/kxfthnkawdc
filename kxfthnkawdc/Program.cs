@@ -36,7 +36,7 @@ builder.Services.AddSingleton<ApplicationDbContext>();
 
 var app = builder.Build();
 
-app.UseHttpsRedirection();
+app.MapHub<ChatHub>("chatsignalr");
 
 app.UseSession();
 
@@ -44,12 +44,18 @@ app.MapControllers();
 
 app.Use((context, next) =>
 {
-    if (!context.Session.Keys.Contains("username") && !context.Request.Path.Value.StartsWith("/login"))
+    if (context.Session.Keys.Contains("username") ||
+        context.Request.Path.Value.StartsWith("/login") ||
+        context.Request.Path.Value.EndsWith(".jpeg") ||
+        context.Request.Path.Value.EndsWith(".ico") ||
+        context.Request.Path.Value == "/")
     {
-        context.Request.Path = "/login.html";
-        context.Response.Redirect("/login.html", true);
+        return next.Invoke();
     }
-    
+
+    context.Request.Path = "/login.html";
+    context.Response.Redirect("/login.html", true);
+
     return next.Invoke();
 });
 
@@ -61,7 +67,5 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseResponseCompression();
-
-app.MapHub<ChatHub>("/chat");
 
 app.Run();

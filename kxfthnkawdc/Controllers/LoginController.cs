@@ -26,13 +26,13 @@ public class LoginController : ControllerBase
         using var command =
             _dbContext.DataSource.CreateCommand(
                 "select * from users where name=(@username) and password=(@password)");
-        command.Parameters.AddWithValue("username", username);
+        command.Parameters.AddWithValue("username", username.ToLower());
         command.Parameters.AddWithValue("password", password);
         using var reader = command.ExecuteReader();
         if (reader.Read())
         {
             HttpContext.Session.SetInt32("id", (int)reader["id"]);
-            HttpContext.Session.SetString("username", username);
+            HttpContext.Session.SetString("username", username.ToLower());
             HttpContext.Session.CommitAsync();
             return RedirectPermanent("/chat.html");
         }

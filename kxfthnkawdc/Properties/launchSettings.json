@@ -7,7 +7,8 @@
       "launchBrowser": false,
       "applicationUrl": "http://localhost:5889",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_CONNECTION_STRING": "Host=HOST_IP;Database=DB_NAME;Username=USERNAME;Password=PASSWORD"
       }
     },
     "https": {
@@ -16,7 +17,8 @@
       "launchBrowser": false,
       "applicationUrl": "https://localhost:5888;http://localhost:5889",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "DB_CONNECTION_STRING": "Host=HOST_IP;Database=DB_NAME;Username=USERNAME;Password=PASSWORD"
       }
     }
   }
