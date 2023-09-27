@@ -50,6 +50,12 @@ app.Use((context, next) =>
         context.Request.Path.Value.EndsWith(".ico") ||
         context.Request.Path.Value == "/")
     {
+        int? clientId = context.Session.GetInt32("id");
+        if (clientId != null)
+        {
+            context.Response.Headers.Add("client_id", clientId.ToString());
+        }
+
         return next.Invoke();
     }
 
@@ -67,5 +73,7 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseResponseCompression();
+
+app.UseWebSockets();
 
 app.Run();

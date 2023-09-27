@@ -3,62 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
+    <link rel="stylesheet" type="text/css" href="login.css">
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
 </head>
 <body>
-<div>
-    <style>
-        label {
-            display: block;
-        }
-
-        input[type='submit'],
-        label {
-            margin-top: 1rem;
-        }
-    </style>
-    <div>
+<div id="login_container">
+    <div id="username_input">
         <label>Username:</label>
-        <input type="text" id="username" required/>
+        <input v-on:keyup.enter="login" type="text" id="username" required/>
     </div>
 
-    <div>
+    <div id="password_input">
         <label>Password:</label>
-        <input type="password" id="password" minlength="8" required/>
+        <input v-on:keyup.enter="login" type="password" id="password" minlength="8" required />
     </div>
 
-    <input type="submit" value="Login" onclick="send()"/>
+    <button v-on:click="login" id="login_button" type="submit" value="Login">Login</button>
 
-    <p id="error"></p>
+    <p id="login_error_message"></p>
 </div>
 </body>
 <script>
-    async function send() {
-        const loginData = {
-            username: document.getElementById('username').value,
-            password: document.getElementById('password').value
-        }
-
-        let response = await fetch("/login/verify", {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-                'username': loginData.username,
-                'password': loginData.password
+    let app = new Vue({
+        el: '#login_container',
+        methods: {
+            login: async function () {
+                let response = await fetch("/login/verify", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'username': document.getElementById('username').value,
+                        'password': document.getElementById('password').value
+                    }
+                })
+                    .catch(error => {
+                        document.getElementById('login_error_message').innerText = 'Wrong name or password';
+                        document.getElementById('password').value = '';
+                    })
+                if (response.status !== 200) {
+                    document.getElementById('login_error_message').innerText = 'Wrong name or password';
+                    document.getElementById('password').value = '';
+                }
+                else {
+                    location.reload()
+                }
             }
-        })
-            .catch(error => {
-                document.getElementById('error').innerText = 'Wrong name or password';
-                document.getElementById('username').value = '';
-                document.getElementById('password').value = '';
-            })
-        if (response.status === 200) {
-            window.location.href = '/chat.html';
-        } else {
-            document.getElementById('error').innerText = 'Wrong name or password';
-            document.getElementById('username').value = '';
-            document.getElementById('password').value = '';
         }
-    }
+    })
 </script>
 </html>
