@@ -1,0 +1,108 @@
+html {
+    font-size: 16px;
+    font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Apple Color Emoji", "Segoe UI", Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+    outline: none;
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+body {
+    margin-top: 0;
+    margin-left: 0;
+    margin-bottom: 0;
+    margin-right: 0;
+}
+
+#main_container {
+    display: flex;
+    max-height: 100%;
+    height: 100%;
+    width: 100%;
+}
+
+#chat_list {
+    width: 340px;
+    border-right: 1px solid;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#available_chat {
+    height: 70px;
+    width: 100%;
+    border: 1px solid;
+}
+
+#user_search_input {
+    border: 0;
+    border-radius: 0;
+}
+
+#chat_window {
+    width: 100%;
+    height: 100%;
+    text-wrap: normal;
+    background: linear-gradient(235deg, rgba(255, 243, 195, 1) 0%, rgba(221, 252, 255, 1) 50%, rgba(247, 221, 247, 1) 100%);
+}
+
+#chat_messages {
+    width: 100%;
+    height: 97%;
+    overflow-y: auto;
+    vertical-align: top;
+    horiz-align: center;
+}
+
+#new_message_input {
+    width: 100%;
+    margin-left: -1px;
+    height: 32px;
+    display: flex;
+}
+
+#message_input {
+    width: 100%;
+    outline: 1px;
+    height: 32px;
+    padding-top: 2px;
+    border-width: 1px;
+}
+
+#message_send_btn {
+    width: 80px;
+    border-width: 1px;
+    height: 32px;
+}
+
+#message_container {
+    width: fit-content;
+    padding-bottom: 15px;
+    border-radius: 10px;
+    margin-left: 8px;
+    margin-right: 8px;
+    min-width: 80px;
+    min-height: 32px;
+}
+
+#message_content {
+    margin-left: 4px;
+    margin-right: 4px;
+    margin-top: 8px;
+    margin-bottom: -10px;
+    padding-top: 4px;
+}
+
+#message_time {
+    color: rgb(128, 128, 128);
+    font-size: small;
+    text-align: right;
+    padding-top: 5px;
+}

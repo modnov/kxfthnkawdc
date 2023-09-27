@@ -7,6 +7,7 @@ using Npgsql;
 namespace kxfthnkawdc.Controllers;
 
 [Route("chat")]
+// TODO [Authorize]
 public class ChatController : ControllerBase
 {
     private readonly ILogger<ChatController> _logger;
@@ -39,43 +40,69 @@ public class ChatController : ControllerBase
             });
         }
 
-        int clientId = Request.HttpContext.Session.GetInt32("id")!.Value;
-        Response.Headers.Add("client_id", clientId.ToString());
         return messages;
+    }
+
+    [HttpGet]
+    [Route("chats")]
+    public IEnumerable<Chat> GetChats()
+    {
+        int clientId = Request.HttpContext.Session.GetInt32("id")!.Value;
+        using var command =
+            _dbContext.DataSource.CreateCommand(
+                "select * from chats where first_user_id = @client_id or second_user_id = @client_id");
+        command.Parameters.Add(new NpgsqlParameter()
+        {
+            ParameterName = "client_id",
+            Value = clientId
+        });
+        using var messageReader = command.ExecuteReader();
+        var chats = new List<Chat>();
+        while (messageReader.Read())
+        {
+            chats.Add(new Chat()
+            {
+                ChatId = (int)messageReader["chat_id"],
+                Interlocutor = new User(_dbContext)
+                {
+                    Id = (int)messageReader["first_user_id"] == clientId
+                        ? (int)messageReader["second_user_id"]
+                        : (int)messageReader["first_user_id"]
+                }
+            });
+        }
+
+        return chats;
     }
 
     [HttpPost]
     [Route("send")]
-    public async Task PostMessage([FromHeader] string content)
+    public async Task PostMessage([FromHeader] string content, [FromHeader] int chatId)
     {
-        try
-        {
-            using var command = _dbContext.DataSource.CreateCommand(
-                $"insert into messages (sender_id, content, date) values (@sender_id, @content, @date)");
+        using var command = _dbContext.DataSource.CreateCommand(
+            $"insert into messages (sender_id, content, date, chat_id) values (@sender_id, @content, @date, @chat_id)");
 
-            command.Parameters.Add(new NpgsqlParameter
-            {
-                ParameterName = "sender_id",
-                Value = Request.HttpContext.Session.GetInt32("id")!.Value
-            });
-            command.Parameters.Add(new NpgsqlParameter
-            {
-                ParameterName = "content",
-                Value = HttpUtility.UrlDecode(content)
-            });
-            command.Parameters.Add(new NpgsqlParameter
-            {
-                ParameterName = "date",
-                Value = DateTime.Now
-            });
-
-            await command.ExecuteNonQueryAsync();
-            
-            Response.Redirect("/messages");
-        }
-        catch (Exception e)
+        command.Parameters.Add(new NpgsqlParameter
         {
-            Console.WriteLine(e);
-        }
+            ParameterName = "sender_id",
+            Value = Request.HttpContext.Session.GetInt32("id")!.Value
+        });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            ParameterName = "content",
+            Value = HttpUtility.UrlDecode(content)
+        });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            ParameterName = "date",
+            Value = DateTime.UtcNow
+        });
+        command.Parameters.Add(new NpgsqlParameter
+        {
+            ParameterName = "chat_id",
+            Value = chatId
+        });
+
+        await command.ExecuteNonQueryAsync();
     }
 }

@@ -1,55 +1,71 @@
 <head>
-    <title>kxfthnkawdc</title>
+    <title><3 <3 <3</title>
     <meta charset="UTF-8">
-    <link rel="stylesheet" type="text/css" href="style.css">
+    <link rel="stylesheet" type="text/css" href="chat.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
 </head>
 <body>
-<div id="chat_window">
-    <div id="chat_messages">
-        <div id="message_container"
-             v-for="message in messages"
-             v-bind:style="message.user.id  !== client_id ? { backgroundColor: 'lightpink' } :
-                [{ backgroundColor: 'lightblue'}, {horizAlign: 'left' }, {marginLeft: 'auto' }, {marginRight: '6px' }]">
-            <div id="message_content">
-                <div id="message_sender" v-bind:style="message.user.id === client_id ? { textAlign: 'right' } : ''">
-                    <span>{{message.user.name}}</span>
-                </div>
-                <div id="message_text">
-                    <span>{{message.content}}</span>
+<div id="main_container">
+    <div id="chat_list">
+        <div id="user_search">
+            <input id="user_search_input">
+        </div>
+        <div id="available_chat" v-for="chat in chats">
+            <span>{{chat.interlocutor.name}}</span>
+        </div>
+    </div>
+    <div id="chat_window">
+        <div id="chat_messages">
+            <div id="message_container"
+                 v-for="message in this.messages"
+                 v-bind:style="message.user.id  !== client_id ? { backgroundColor: 'lightpink' } :
+                [{ backgroundColor: 'lightblue'}, {marginLeft: 'auto' }, {marginRight: '6px' }]">
+                <div id="message_content">
+                    <div id="message_text">
+                        <span>{{message.content}}</span>
+                    </div>
+                    <div id="message_time">
+                        <span>{{message.date.substring(11, 16)}}</span>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-    <div id="new_message_input">
-        <input id="message_input" v-on:keyup.enter="send"/>
-        <button id="message_send_btn" v-on:click="send">Send</button>
+        <div id="new_message_input">
+            <input id="message_input" v-on:keyup.enter="send"/>
+            <button id="message_send_btn" v-on:click="send">Send</button>
+        </div>
     </div>
 </div>
 <script>
     let hubConnection
     let app = new Vue({
-        el: '#chat_window',
+        el: '#main_container',
         data: {
+            chats: [],
             messages: [],
             client_id: 0,
+            chat_id: 1
         },
         mounted: async function () {
-            await this.updateMessages()
+            await fetch('/')
+                .then(async data => {
+                    this.client_id = await parseInt(data.headers.get("client_id"))
+                })
+            this.updateChats()
+            this.updateMessages()
+
+            var elem = document.getElementById('chat_messages');
+            elem.scrollTo(0, elem.scrollHeight);
         },
         created: async function () {
             hubConnection = new signalR.HubConnectionBuilder().withUrl("chatsignalr").withAutomaticReconnect().build()
             hubConnection.on("Receive", (message) => {
                 this.messages.push(message)
+                var elem = document.getElementById('chat_messages');
+                elem.scrollTo(0, elem.scrollHeight);
             })
             hubConnection.start()
-                .then(function () {
-                    console.log('Connection started');
-                })
-
-            var elem = document.getElementById('chat_messages');
-            elem.scrollTo(0, elem.scrollHeight);
         },
         methods: {
             updateMessages: async function () {
@@ -62,11 +78,22 @@
                 })
                     .then(async data => {
                         this.messages = await data.json();
-                        this.client_id = await parseInt(data.headers.get("client_id"))
                     })
 
                 var elem = document.getElementById('chat_messages');
                 elem.scrollTo(0, elem.scrollHeight);
+            },
+            updateChats: async function () {
+                await fetch('/chat/chats', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                })
+                    .then(async data => {
+                        this.chats = await data.json();
+                    })
             },
             send: async function () {
                 let text = document.getElementById('message_input').value
@@ -77,11 +104,16 @@
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'content': encodeURIComponent(text)
+                        'content': encodeURIComponent(text),
+                        'chat_id': this.chat_id
                     }
                 })
 
-                this.updateMessages();
+                this.updateMessages()
+                this.updateChats()
+
+                var elem = document.getElementById('chat_messages');
+                elem.scrollTo(0, elem.scrollHeight);
                 await hubConnection.invoke("Send", text)
             }
         }
