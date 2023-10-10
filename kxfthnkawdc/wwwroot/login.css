@@ -1,9 +1,41 @@
-﻿#password_input {
+﻿html {
+    font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Apple Color Emoji", "Segoe UI", Oxygen, Ubuntu, Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+}
+
+#main_container {
+    display: inline-flex;
+}
+
+#login_username_input, #login_password_input {
+    width: 70px;
+}
+
+#login_password_input, #register_password_input, #register_password_reenter_input {
     margin-top: 10px;
 }
 
-#login_button {
+#login_container {
+    width: 50%;
+}
+
+#register_container {
+    margin-left: 230px;
+    width: 50%;
+}
+
+#register_username_input, #register_password_input, #register_password_reenter_input {
+    width: 124px;
+}
+
+#login_button, #register_button {
     margin-top: 10px;
     width: 80px;
     height: 30px;
+}
+
+#error_message {
+    display: block;
+    color: red;
+    font-weight: bold;
+    font-size: x-large;
 }

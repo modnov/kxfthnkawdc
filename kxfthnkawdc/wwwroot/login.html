@@ -7,47 +7,129 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2.7.8/dist/vue.js"></script>
 </head>
 <body>
-<div id="login_container">
-    <div id="username_input">
-        <label>Username:</label>
-        <input v-on:keyup.enter="login" type="text" id="username" required/>
+<div id="main_container">
+    <div id="login_container">
+        <div id="login_username_input">
+            <label>Username:</label>
+            <input v-on:keyup.enter="login" type="text" id="login_username"/>
+        </div>
+
+        <div id="login_password_input">
+            <label>Password:</label>
+            <input v-on:keyup.enter="login" type="password" id="login_password" minlength="8"/>
+        </div>
+
+        <button v-on:click="login" id="login_button" type="submit" value="Login">Login</button>
     </div>
+    <div id="register_container">
+        <div id="register_username_input">
+            <label>Username:</label>
+            <input v-on:keyup.enter="register" type="text" id="register_username"/>
+        </div>
 
-    <div id="password_input">
-        <label>Password:</label>
-        <input v-on:keyup.enter="login" type="password" id="password" minlength="8" required />
+        <div id="register_password_input">
+            <label>Password:</label>
+            <input v-on:keyup.enter="register" type="password" id="register_password" minlength="8"/>
+        </div>
+
+        <div id="register_password_reenter_input">
+            <label>Re-enter password:</label>
+            <input v-on:keyup.enter="register" type="password" id="register_password_reenter" minlength="8"/>
+        </div>
+
+        <button v-on:click="register" id="register_button" type="submit" value="Register">Register</button>
     </div>
-
-    <button v-on:click="login" id="login_button" type="submit" value="Login">Login</button>
-
-    <p id="login_error_message"></p>
 </div>
+<p id="error_message"></p>
 </body>
 <script>
     let app = new Vue({
-        el: '#login_container',
+        el: '#main_container',
+        mounted: async function () {
+            let client_id = 0
+            await fetch('/')
+                .then(async data => {
+                    client_id = await parseInt(data.headers.get("client_id"))
+                })
+            if (client_id !== 0)
+                location.replace('/chat.html')
+        },
         methods: {
-            login: async function () {
-                let response = await fetch("/login/verify", {
+            login: function () {
+                let username = document.getElementById('login_username').value
+                let password = document.getElementById('login_password').value
+
+                if (username.trim() === '') {
+                    document.getElementById('error_message').innerText = 'Username cannot be empty'
+                    return
+                }
+
+                if (password.trim() === '') {
+                    document.getElementById('error_message').innerText = 'Password cannot be empty'
+                    return
+                }
+
+                fetch("/login/login", {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'username': document.getElementById('username').value,
-                        'password': document.getElementById('password').value
+                        'username': username,
+                        'password': password
                     }
                 })
-                    .catch(error => {
-                        document.getElementById('login_error_message').innerText = 'Wrong name or password';
-                        document.getElementById('password').value = '';
+                    .then(async response => {
+                        if (await response.clone().text() === '"Success"') {
+                            location.replace('/chat.html')
+                        } else {
+                            document.getElementById('error_message').innerText = (await response.clone().text()).replaceAll('\"', '')
+                            document.getElementById('login_password').value = ''
+                        }
                     })
-                if (response.status !== 200) {
-                    document.getElementById('login_error_message').innerText = 'Wrong name or password';
-                    document.getElementById('password').value = '';
+            },
+            register: function () {
+                if (document.getElementById('register_password').value !== document.getElementById('register_password_reenter').value) {
+                    document.getElementById('register_password').value = ''
+                    document.getElementById('register_password_reenter').value = ''
+                    document.getElementById('error_message').innerText = 'Entered passwords are different'
+                    return
                 }
-                else {
-                    location.reload()
+
+                if (document.getElementById('register_username').value.trim() === '') {
+                    document.getElementById('error_message').innerText = 'Username cannot be empty'
+                    return
                 }
+
+                if (document.getElementById('register_password').value.trim() === '' &&
+                    document.getElementById('register_password_reenter').value.trim() === '') {
+                    document.getElementById('error_message').innerText = 'Entered passwords are empty'
+                    return
+                }
+                fetch("/login/register", {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'username': document.getElementById('register_username').value,
+                        'password': document.getElementById('register_password').value
+                    }
+                })
+                    .then(async response => {
+                        if (await response.clone().text() === '"Success"') {
+                            location.replace('/chat.html')
+                        } else {
+                            document.getElementById('error_message').innerText = (await response.clone().text()).replaceAll('\"', '')
+                            document.getElementById('register_username').value = ''
+                            document.getElementById('register_password').value = ''
+                            document.getElementById('register_password_reenter').value = ''
+                        }
+                    })
+                    .catch(error => {
+                        document.getElementById('error_message').innerText = error.name
+                        document.getElementById('register_username').value = ''
+                        document.getElementById('register_password').value = ''
+                        document.getElementById('register_password_reenter').value = ''
+                    })
             }
         }
     })
