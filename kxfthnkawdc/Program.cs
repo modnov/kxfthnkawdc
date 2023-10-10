@@ -4,8 +4,6 @@ using kxfthnkawdc.Models;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Mvc;
 
-[assembly: ApiController]
-
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -21,34 +19,27 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options => options.Le
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession();
 builder.Services.AddSignalR();
-builder.Services.AddCors(options =>
-{
-    options.AddDefaultPolicy(
-        policy =>
-        {
-            policy.AllowAnyHeader();
-            policy.AllowAnyMethod();
-            policy.AllowAnyOrigin();
-        });
-});
 builder.Services.AddRouting(options => options.LowercaseUrls = true);
 builder.Services.AddSingleton<ApplicationDbContext>();
 
 var app = builder.Build();
 
-app.MapHub<ChatHub>("chatsignalr");
-
 app.UseSession();
 
 app.MapControllers();
 
+app.MapHub<ChatHub>("chatsignalr");
+
 app.Use((context, next) =>
 {
-    if (context.Session.Keys.Contains("username") ||
-        context.Request.Path.Value.StartsWith("/login") ||
-        context.Request.Path.Value.EndsWith(".jpeg") ||
-        context.Request.Path.Value.EndsWith(".ico") ||
-        context.Request.Path.Value == "/")
+    if (app.Environment.IsDevelopment())
+    {
+        context.Session.SetInt32("id", 2);
+        context.Session.SetString("username", "kxfthnkawdc");
+        context.Session.CommitAsync();
+    }
+    
+    if (context.Session.Keys.Contains("username"))
     {
         int? clientId = context.Session.GetInt32("id");
         if (clientId != null)
@@ -59,21 +50,24 @@ app.Use((context, next) =>
         return next.Invoke();
     }
 
-    context.Request.Path = "/login.html";
-    context.Response.Redirect("/login.html", true);
+    context.Response.Headers.Add("client_id", "0");
+
+    if (context.Request.Path == "/chat.html")
+    {
+        context.Request.Path = "/login.html";
+        context.Response.Redirect("/login.html", true);
+    }
 
     return next.Invoke();
 });
 
 app.UseRouting();
 
-app.UseCors();
-
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 app.UseResponseCompression();
 
-app.UseWebSockets();
+app.MapFallbackToFile("index.html");
 
 app.Run();
