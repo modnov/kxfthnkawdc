@@ -7,35 +7,46 @@ using Npgsql;
 namespace kxfthnkawdc.Controllers;
 
 [Route("chat")]
+[ApiController]
 // TODO [Authorize]
 public class ChatController : ControllerBase
 {
-    private readonly ILogger<ChatController> _logger;
     private readonly ApplicationDbContext _dbContext;
 
-    public ChatController(ILogger<ChatController> logger, ApplicationDbContext dbContext)
+    private int ClientId => Request.HttpContext.Session.GetInt32("id")!.Value;
+
+    public ChatController(ApplicationDbContext dbContext)
     {
-        _logger = logger;
         _dbContext = dbContext;
     }
 
     [HttpGet]
     [Route("messages")]
-    public IEnumerable<ChatMessage> GetMessages()
+    public IEnumerable<Message> GetMessages()
     {
-        using var command = _dbContext.DataSource.CreateCommand("select * from messages order by id");
-        using var messageReader = command.ExecuteReader();
-        var messages = new List<ChatMessage>();
-        while (messageReader.Read())
+        using var command = _dbContext.DataSource.CreateCommand(
+            "SELECT * FROM messages AS m " +
+            "INNER JOIN users AS u ON @sender_id = u.id " +
+            "WHERE m.chat_id = @chat_id " +
+            "ORDER BY m.id");
+        command.Parameters.AddWithValue("sender_id", ClientId);
+        command.Parameters.AddWithValue("chat_id", Convert.ToInt32(Request.Headers["chat_id"]));
+
+        using var reader = command.ExecuteReader();
+
+        var messages = new List<Message>();
+        while (reader.Read())
         {
-            messages.Add(new ChatMessage
+            messages.Add(new Message
             {
-                Id = (int)messageReader["id"],
-                Content = (string)messageReader["content"],
-                Date = (DateTime)messageReader["date"],
-                User = new User(_dbContext)
+                Id = (int)reader["id"],
+                Content = (string)reader["content"],
+                Date = ((DateTime)reader["date"]).ToLocalTime(),
+                ChatId = Convert.ToInt32(Request.Headers["chat_id"]),
+                User = new User()
                 {
-                    Id = (int)messageReader["sender_id"]
+                    Id = (int)reader["sender_id"],
+                    Name = (string)reader["name"]
                 }
             });
         }
@@ -47,27 +58,42 @@ public class ChatController : ControllerBase
     [Route("chats")]
     public IEnumerable<Chat> GetChats()
     {
-        int clientId = Request.HttpContext.Session.GetInt32("id")!.Value;
         using var command =
-            _dbContext.DataSource.CreateCommand(
-                "select * from chats where first_user_id = @client_id or second_user_id = @client_id");
-        command.Parameters.Add(new NpgsqlParameter()
-        {
-            ParameterName = "client_id",
-            Value = clientId
-        });
-        using var messageReader = command.ExecuteReader();
+            _dbContext.DataSource.CreateCommand
+            (
+                "SELECT chat_id, name, date, content, first_user_id, second_user_id, sender_id " +
+                "FROM (SELECT *, ROW_NUMBER() OVER (PARTITION BY m.chat_id ORDER BY m.date DESC) AS rn " +
+                "FROM chats AS c " +
+                "INNER JOIN messages AS m ON m.chat_id = c.id) AS mc " +
+                "INNER JOIN users AS u ON u.id = mc.sender_id WHERE mc.rn = 1 AND " +
+                "(first_user_id = @client_id OR second_user_id = @client_id)");
+        
+        command.Parameters.AddWithValue("client_id", ClientId);
+
+        using var reader = command.ExecuteReader();
         var chats = new List<Chat>();
-        while (messageReader.Read())
+        while (reader.Read())
         {
             chats.Add(new Chat()
             {
-                ChatId = (int)messageReader["id"],
-                Interlocutor = new User(_dbContext)
+                ChatId = (int)reader["chat_id"],
+                Interlocutor = new User()
                 {
-                    Id = (int)messageReader["first_user_id"] == clientId
-                        ? (int)messageReader["second_user_id"]
-                        : (int)messageReader["first_user_id"]
+                    Id = (int)reader["first_user_id"] == ClientId
+                        ? (int)reader["second_user_id"]
+                        : (int)reader["first_user_id"],
+                    Name = (string)reader["name"]
+                },
+                LastMessage = new Message()
+                {
+                    ChatId = (int)reader["chat_id"],
+                    Content = (string)reader["content"],
+                    Date = (DateTime)reader["date"],
+                    User = new User()
+                    {
+                        Id = (int)reader["sender_id"],
+                        Name = (string)reader["name"]
+                    }
                 }
             });
         }
@@ -75,34 +101,111 @@ public class ChatController : ControllerBase
         return chats;
     }
 
+    [HttpGet]
+    [Route("find")]
+    public int FindUserAndCreateChat([FromHeader] string userSearch)
+    {
+        NpgsqlCommand command;
+        if (userSearch.All(e => char.IsDigit(e)))
+        {
+            command = _dbContext.DataSource.CreateCommand(
+                "SELECT * FROM users WHERE @id = id");
+            command.Parameters.AddWithValue("id", userSearch);
+        }
+        else
+        {
+            command = _dbContext.DataSource.CreateCommand(
+                "SELECT * FROM users WHERE @name = name");
+            command.Parameters.AddWithValue("name", userSearch);
+        }
+
+        using var reader = command.ExecuteReader();
+
+        int newChatId = 0;
+        if (reader.Read())
+        {
+            if (ClientId == (int)reader["id"])
+            {
+                return -1;
+            }
+
+            int chatId = ChatAlreadyExist((int)reader["id"]);
+            if (chatId != 0)
+            {
+                return chatId;
+            }
+            else
+            {
+                newChatId = CreateNewChat((int)reader["id"]);
+            }
+        }
+
+        command.Dispose();
+
+        return newChatId;
+
+        int ChatAlreadyExist(int userId)
+        {
+            using var createChatCommand = _dbContext.DataSource.CreateCommand(
+                "SELECT id FROM chats WHERE " +
+                "((first_user_id = @user_id AND second_user_id = @client_id) OR " +
+                "(first_user_id = @client_id AND second_user_id = @user_id))");
+            createChatCommand.Parameters.AddWithValue("client_id", ClientId);
+            createChatCommand.Parameters.AddWithValue("user_id", userId);
+            var result = createChatCommand.ExecuteScalar();
+            if (result == null)
+                return 0;
+            return (int)result;
+        }
+
+        int CreateNewChat(int userId)
+        {
+            using var createChatCommand = _dbContext.DataSource.CreateCommand(
+                "INSERT INTO chats (first_user_id, second_user_id) VALUES (@client_id, @found_user);" +
+                "SELECT id FROM chats WHERE second_user_id = @found_user");
+            createChatCommand.Parameters.AddWithValue("client_id", ClientId);
+            createChatCommand.Parameters.AddWithValue("found_user", userId);
+            using var reader = createChatCommand.ExecuteReader();
+            if (reader.Read())
+            {
+                return (int)reader["id"];
+            }
+
+            return 0;
+        }
+    }
+
     [HttpPost]
     [Route("send")]
-    public async Task PostMessage([FromHeader] string content, [FromHeader] int chatId)
+    public void PostMessage()
     {
         using var command = _dbContext.DataSource.CreateCommand(
-            $"insert into messages (sender_id, content, date, chat_id) values (@sender_id, @content, @date, @chat_id)");
+            $"INSERT INTO messages (sender_id, content, date, chat_id) VALUES (@sender_id, @content, @date, @chat_id)");
 
-        command.Parameters.Add(new NpgsqlParameter
+        command.Parameters.AddRange(new NpgsqlParameter[]
         {
-            ParameterName = "sender_id",
-            Value = Request.HttpContext.Session.GetInt32("id")!.Value
-        });
-        command.Parameters.Add(new NpgsqlParameter
-        {
-            ParameterName = "content",
-            Value = HttpUtility.UrlDecode(content)
-        });
-        command.Parameters.Add(new NpgsqlParameter
-        {
-            ParameterName = "date",
-            Value = DateTime.UtcNow
-        });
-        command.Parameters.Add(new NpgsqlParameter
-        {
-            ParameterName = "chat_id",
-            Value = chatId
+            new NpgsqlParameter()
+            {
+                ParameterName = "sender_id",
+                Value = ClientId
+            },
+            new NpgsqlParameter()
+            {
+                ParameterName = "content",
+                Value = HttpUtility.UrlDecode(Request.Headers["content"])
+            },
+            new NpgsqlParameter()
+            {
+                ParameterName = "date",
+                Value = DateTime.UtcNow
+            },
+            new NpgsqlParameter()
+            {
+                ParameterName = "chat_id",
+                Value = Convert.ToInt32(Request.Headers["chat_id"])
+            }
         });
 
-        await command.ExecuteNonQueryAsync();
+        command.ExecuteNonQuery();
     }
 }

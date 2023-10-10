@@ -14,15 +14,16 @@ public sealed class ChatHub : Microsoft.AspNetCore.SignalR.Hub
     
     public async Task Send(string message)
     {
-        await Clients.All.SendAsync("Receive", new ChatMessage()
+        await Clients.All.SendAsync("Receive", new Message()
         {
-            User = new User(_dbContext)
+            User = new User()
             {
                 Id = Context.GetHttpContext().Session.GetInt32("id").Value,
                 Name = Context.GetHttpContext().Session.GetString("username")
             },
             Content = message,
-            Date = DateTime.Now
+            Date = DateTime.UtcNow,
+            ChatId = Convert.ToInt32(Context.GetHttpContext().Request.Headers["chat_id"])
         });
     }
 }

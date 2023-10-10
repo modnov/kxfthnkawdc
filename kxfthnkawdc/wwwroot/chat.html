@@ -9,16 +9,27 @@
 <div id="main_container">
     <div id="chat_list">
         <div id="user_search">
-            <input id="user_search_input">
+            <input v-on:keyup.enter="findUser" id="user_search_input" placeholder="Search user (name or ID)">
         </div>
-        <div id="available_chat" v-for="chat in chats">
-            <span>{{chat.interlocutor.name}}</span>
+        <div v-for="chat in chats">
+            <a v-on:click="chatChange(chat.chatId)">
+                <div id="available_chat">
+                    <img id="user_avatar" src="blank-profile-picture.png">
+                    <div id="chat_info_container">
+                        <span id="chat_interlocutor">{{chat.interlocutor.name}}</span>
+                        <span id="chat_last_message_time">{{chat.lastMessage.date.substring(11, 16)}}</span><br>
+                        <span id="chat_last_message">{{chat.lastMessage.content.length > 32 ?
+                                chat.lastMessage.content.slice(0, 32) + "..." :
+                                chat.lastMessage.content}}</span>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
     <div id="chat_window">
         <div id="chat_messages">
             <div id="message_container"
-                 v-for="message in this.messages"
+                 v-for="message in messages"
                  v-bind:style="message.user.id  !== client_id ? { backgroundColor: 'lightpink' } :
                 [{ backgroundColor: 'lightblue'}, {marginLeft: 'auto' }, {marginRight: '6px' }]">
                 <div id="message_content">
@@ -45,7 +56,7 @@
             chats: [],
             messages: [],
             client_id: 0,
-            chat_id: 1
+            chat_id: 0
         },
         mounted: async function () {
             await fetch('/')
@@ -53,15 +64,15 @@
                     this.client_id = await parseInt(data.headers.get("client_id"))
                 })
             this.updateChats()
-            this.updateMessages()
 
             var elem = document.getElementById('chat_messages');
             elem.scrollTo(0, elem.scrollHeight);
         },
         created: async function () {
             hubConnection = new signalR.HubConnectionBuilder().withUrl("chatsignalr").withAutomaticReconnect().build()
-            hubConnection.on("Receive", (message) => {
-                this.messages.push(message)
+            hubConnection.on("Receive", async (message) => {
+                this.updateMessages()
+                this.updateChats()
                 var elem = document.getElementById('chat_messages');
                 elem.scrollTo(0, elem.scrollHeight);
             })
@@ -73,7 +84,8 @@
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'chat_id': this.chat_id
                     },
                 })
                     .then(async data => {
@@ -88,7 +100,8 @@
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'chat_id': this.chat_id
                     },
                 })
                     .then(async data => {
@@ -97,6 +110,9 @@
             },
             send: async function () {
                 let text = document.getElementById('message_input').value
+                if (text === null || text.trim() === '')
+                    return
+
                 document.getElementById('message_input').value = ""
 
                 await fetch("/chat/send", {
@@ -104,7 +120,7 @@
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'content': encodeURIComponent(text),
+                        'content': encodeURIComponent(text.trim()),
                         'chat_id': this.chat_id
                     }
                 })
@@ -114,7 +130,37 @@
 
                 var elem = document.getElementById('chat_messages');
                 elem.scrollTo(0, elem.scrollHeight);
-                await hubConnection.invoke("Send", text)
+                hubConnection.invoke("Send", text)
+            },
+            findUser: async function () {
+                await fetch('/chat/find', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json',
+                        'userSearch': document.getElementById('user_search_input').value
+                    },
+                })
+                    .then(async data => {
+                        let response = await data.text()
+
+                        if (response === '-1')
+                            return 0
+
+                        if (response === '0')
+                            return 0
+
+                        document.getElementById('user_search_input').value = '';
+                        this.chatChange(response)
+                        this.updateChats()
+                        return 0
+                    })
+            },
+            chatChange: function (id) {
+                if (this.chat_id === id)
+                    return
+                this.chat_id = id;
+                this.updateMessages();
             }
         }
     })
