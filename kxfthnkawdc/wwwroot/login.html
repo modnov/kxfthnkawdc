@@ -55,7 +55,7 @@
                 location.replace('/chat.html')
         },
         methods: {
-            login: function () {
+            login: async function () {
                 let username = document.getElementById('login_username').value
                 let password = document.getElementById('login_password').value
 
@@ -69,17 +69,17 @@
                     return
                 }
 
-                fetch("/login/login", {
+                await fetch("/login/login", {
                     method: 'POST',
                     headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
+                        'Accept': 'text/plain',
+                        'Content-Type': 'text/plain',
                         'username': username,
                         'password': password
                     }
                 })
                     .then(async response => {
-                        if (await response.clone().text() === '"Success"') {
+                        if (await response.clone().text() === 'Success') {
                             location.replace('/chat.html')
                         } else {
                             document.getElementById('error_message').innerText = (await response.clone().text()).replaceAll('\"', '')
@@ -87,7 +87,7 @@
                         }
                     })
             },
-            register: function () {
+            register: async function () {
                 if (document.getElementById('register_password').value !== document.getElementById('register_password_reenter').value) {
                     document.getElementById('register_password').value = ''
                     document.getElementById('register_password_reenter').value = ''
@@ -105,17 +105,17 @@
                     document.getElementById('error_message').innerText = 'Entered passwords are empty'
                     return
                 }
-                fetch("/login/register", {
+                await fetch("/login/register", {
                     method: 'POST',
                     headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json',
+                        'Accept': 'text/plain',
+                        'Content-Type': 'text/plain',
                         'username': document.getElementById('register_username').value,
                         'password': document.getElementById('register_password').value
                     }
                 })
                     .then(async response => {
-                        if (await response.clone().text() === '"Success"') {
+                        if (await response.clone().text() === 'Success') {
                             location.replace('/chat.html')
                         } else {
                             document.getElementById('error_message').innerText = (await response.clone().text()).replaceAll('\"', '')

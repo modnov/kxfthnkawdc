@@ -85,7 +85,7 @@
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'chat_id': this.chat_id
+                        'chatId': this.chat_id
                     },
                 })
                     .then(async data => {
@@ -101,7 +101,7 @@
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'chat_id': this.chat_id
+                        'chatId': this.chat_id
                     },
                 })
                     .then(async data => {
@@ -121,7 +121,7 @@
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
                         'content': encodeURIComponent(text.trim()),
-                        'chat_id': this.chat_id
+                        'chatId': this.chat_id
                     }
                 })
 
@@ -151,16 +151,16 @@
                             return 0
 
                         document.getElementById('user_search_input').value = '';
-                        this.chatChange(response)
-                        this.updateChats()
+                        await this.chatChange(response)
+                        await this.updateChats()
                         return 0
                     })
             },
-            chatChange: function (id) {
+            chatChange: async function (id) {
                 if (this.chat_id === id)
                     return
                 this.chat_id = id;
-                this.updateMessages();
+                await this.updateMessages();
             }
         }
     })

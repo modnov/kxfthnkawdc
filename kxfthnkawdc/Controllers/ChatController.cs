@@ -22,15 +22,15 @@ public class ChatController : ControllerBase
 
     [HttpGet]
     [Route("messages")]
-    public IEnumerable<Message> GetMessages()
+    public IEnumerable<Message> GetMessages([FromHeader] int chatId)
     {
         using var command = _dbContext.DataSource.CreateCommand(
             "SELECT * FROM messages AS m " +
-            "INNER JOIN users AS u ON @sender_id = u.id " +
+            "INNER JOIN users AS u ON @client_id = u.id " +
             "WHERE m.chat_id = @chat_id " +
             "ORDER BY m.id");
-        command.Parameters.AddWithValue("sender_id", ClientId);
-        command.Parameters.AddWithValue("chat_id", Convert.ToInt32(Request.Headers["chat_id"]));
+        command.Parameters.AddWithValue("client_id", ClientId);
+        command.Parameters.AddWithValue("chat_id", chatId);
 
         using var reader = command.ExecuteReader();
 
@@ -41,8 +41,8 @@ public class ChatController : ControllerBase
             {
                 Id = (int)reader["id"],
                 Content = (string)reader["content"],
-                Date = ((DateTime)reader["date"]).ToLocalTime(),
-                ChatId = Convert.ToInt32(Request.Headers["chat_id"]),
+                Date = (DateTime)reader["date"],
+                ChatId = chatId,
                 User = new User()
                 {
                     Id = (int)reader["sender_id"],
@@ -66,8 +66,9 @@ public class ChatController : ControllerBase
                 "FROM chats AS c " +
                 "INNER JOIN messages AS m ON m.chat_id = c.id) AS mc " +
                 "INNER JOIN users AS u ON u.id = mc.sender_id WHERE mc.rn = 1 AND " +
-                "(first_user_id = @client_id OR second_user_id = @client_id)");
-        
+                "(first_user_id = @client_id OR second_user_id = @client_id) " +
+                "ORDER BY date DESC");
+
         command.Parameters.AddWithValue("client_id", ClientId);
 
         using var reader = command.ExecuteReader();
@@ -177,7 +178,7 @@ public class ChatController : ControllerBase
 
     [HttpPost]
     [Route("send")]
-    public void PostMessage()
+    public void PostMessage([FromHeader] int chatId, [FromHeader] string content)
     {
         using var command = _dbContext.DataSource.CreateCommand(
             $"INSERT INTO messages (sender_id, content, date, chat_id) VALUES (@sender_id, @content, @date, @chat_id)");
@@ -192,7 +193,7 @@ public class ChatController : ControllerBase
             new NpgsqlParameter()
             {
                 ParameterName = "content",
-                Value = HttpUtility.UrlDecode(Request.Headers["content"])
+                Value = HttpUtility.UrlDecode(content)
             },
             new NpgsqlParameter()
             {
@@ -202,7 +203,7 @@ public class ChatController : ControllerBase
             new NpgsqlParameter()
             {
                 ParameterName = "chat_id",
-                Value = Convert.ToInt32(Request.Headers["chat_id"])
+                Value = chatId
             }
         });
 
