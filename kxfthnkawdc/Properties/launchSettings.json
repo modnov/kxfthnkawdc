@@ -5,7 +5,7 @@
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": false,
-      "applicationUrl": "http://localhost:5888",
+      "applicationUrl": "https://localhost:5888",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         "DB_CONNECTION_STRING": "Host=HOST_IP;Database=DB_NAME;Username=USERNAME;Password=PASSWORD"
