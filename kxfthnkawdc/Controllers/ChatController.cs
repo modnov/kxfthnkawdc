@@ -122,7 +122,6 @@ public class ChatController : ControllerBase
 
         using var reader = command.ExecuteReader();
 
-        int newChatId = 0;
         if (reader.Read())
         {
             if (ClientId == (int)reader["id"])
@@ -131,19 +130,11 @@ public class ChatController : ControllerBase
             }
 
             int chatId = ChatAlreadyExist((int)reader["id"]);
-            if (chatId != 0)
-            {
-                return chatId;
-            }
-            else
-            {
-                newChatId = CreateNewChat((int)reader["id"]);
-            }
+
+            return chatId != 0 ? chatId : CreateNewChat((int)reader["id"]);
         }
 
-        command.Dispose();
-
-        return newChatId;
+        return 0;
 
         int ChatAlreadyExist(int userId)
         {
