@@ -17,9 +17,9 @@
                     <img id="user_avatar" src="blank-profile-picture.png">
                     <div id="chat_info_container">
                         <span id="chat_interlocutor">{{chat.interlocutor.name}}</span>
-                        <span id="chat_last_message_time">{{chat.lastMessage.date.substring(11, 16)}}</span><br>
-                        <span id="chat_last_message">{{chat.lastMessage.content.length > 32 ?
-                                chat.lastMessage.content.slice(0, 32) + "..." :
+                        <span id="chat_last_message_time">{{new Date(chat.lastMessage.date).toTimeString().substring(0, 5)}}</span><br>
+                        <span id="chat_last_message">{{chat.lastMessage.content.length > 30 ?
+                                chat.lastMessage.content.slice(0, 30) + "..." :
                                 chat.lastMessage.content}}</span>
                     </div>
                 </div>
@@ -37,7 +37,7 @@
                         <span>{{message.content}}</span>
                     </div>
                     <div id="message_time">
-                        <span>{{message.date.substring(11, 16)}}</span>
+                        <span>{{new Date(message.date).toTimeString().substring(0, 5)}}</span>
                     </div>
                 </div>
             </div>
