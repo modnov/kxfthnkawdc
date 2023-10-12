@@ -69,14 +69,18 @@
                     return
                 }
 
+                loginData = {
+                    'Username': username,
+                    'Password': password
+                }
+
                 await fetch("/login/login", {
                     method: 'POST',
                     headers: {
                         'Accept': 'text/plain',
-                        'Content-Type': 'text/plain',
-                        'username': username,
-                        'password': password
-                    }
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
                 })
                     .then(async response => {
                         if (await response.clone().text() === 'Success') {
@@ -105,14 +109,19 @@
                     document.getElementById('error_message').innerText = 'Entered passwords are empty'
                     return
                 }
+                
+                resgisterData = {
+                    'Username': document.getElementById('register_username').value,
+                    'Password': document.getElementById('register_password').value
+                }
+                
                 await fetch("/login/register", {
                     method: 'POST',
                     headers: {
                         'Accept': 'text/plain',
-                        'Content-Type': 'text/plain',
-                        'username': document.getElementById('register_username').value,
-                        'password': document.getElementById('register_password').value
-                    }
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(resgisterData)
                 })
                     .then(async response => {
                         if (await response.clone().text() === 'Success') {

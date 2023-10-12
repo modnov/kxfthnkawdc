@@ -20,9 +20,9 @@ public class ChatController : ControllerBase
         _dbContext = dbContext;
     }
 
-    [HttpGet]
+    [HttpPost]
     [Route("messages")]
-    public IEnumerable<Message> GetMessages([FromHeader] int chatId)
+    public IEnumerable<Message> GetMessages([FromBody] int chatId)
     {
         using var command = _dbContext.DataSource.CreateCommand(
             "SELECT * FROM messages AS m " +
@@ -102,9 +102,9 @@ public class ChatController : ControllerBase
         return chats;
     }
 
-    [HttpGet]
+    [HttpPost]
     [Route("find")]
-    public int FindUserAndCreateChat([FromHeader] string userSearch)
+    public int FindUserAndCreateChat([FromBody] string userSearch)
     {
         NpgsqlCommand command;
         if (userSearch.All(e => char.IsDigit(e)))
@@ -169,7 +169,7 @@ public class ChatController : ControllerBase
 
     [HttpPost]
     [Route("send")]
-    public void PostMessage([FromHeader] int chatId, [FromHeader] string content)
+    public void PostMessage([FromBody] NewMessageModel newMessage)
     {
         using var command = _dbContext.DataSource.CreateCommand(
             $"INSERT INTO messages (sender_id, content, date, chat_id) VALUES (@sender_id, @content, @date, @chat_id)");
@@ -184,7 +184,7 @@ public class ChatController : ControllerBase
             new NpgsqlParameter()
             {
                 ParameterName = "content",
-                Value = HttpUtility.UrlDecode(content)
+                Value = HttpUtility.UrlDecode(newMessage.Content)
             },
             new NpgsqlParameter()
             {
@@ -194,7 +194,7 @@ public class ChatController : ControllerBase
             new NpgsqlParameter()
             {
                 ParameterName = "chat_id",
-                Value = chatId
+                Value = newMessage.ChatId
             }
         });
 

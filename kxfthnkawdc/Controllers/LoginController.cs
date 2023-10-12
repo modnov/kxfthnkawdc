@@ -29,15 +29,17 @@ public class LoginController : ControllerBase
 
     [HttpPost]
     [Route("login")]
-    public string Login([FromHeader] string username, [FromHeader] string password)
+    public string Login([FromBody] AuthDataModel authDataModel)
     {
+        string username = authDataModel.Username.ToLower();
+        string password = authDataModel.Password;
         if (IsAlreadyLogined)
             return "Success";
 
         using var command =
             _dbContext.DataSource.CreateCommand(
                 "SELECT * FROM users WHERE name=(@username) AND password=(@password) LIMIT 1");
-        command.Parameters.AddWithValue("username", username.ToLower());
+        command.Parameters.AddWithValue("username", username);
         command.Parameters.AddWithValue("password", password);
         using var reader = command.ExecuteReader();
         if (reader.Read())
@@ -51,8 +53,10 @@ public class LoginController : ControllerBase
 
     [HttpPost]
     [Route("register")]
-    public string Register([FromHeader] string username, [FromHeader] string password)
+    public string Register([FromBody] AuthDataModel authDataModel)
     {
+        string username = authDataModel.Username;
+        string password = authDataModel.Password;
         if (IsAlreadyLogined)
             return "Success";
 

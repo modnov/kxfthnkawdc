@@ -81,12 +81,12 @@
         methods: {
             updateMessages: async function () {
                 await fetch('/chat/messages', {
-                    method: 'GET',
+                    method: 'POST',
                     headers: {
                         'Accept': 'application/json',
                         'Content-Type': 'application/json',
-                        'chatId': this.chat_id
                     },
+                    body: this.chat_id
                 })
                     .then(async data => {
                         this.messages = await data.json();
@@ -100,8 +100,7 @@
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'chatId': this.chat_id
+                        'Content-Type': 'application/json'
                     },
                 })
                     .then(async data => {
@@ -115,14 +114,19 @@
 
                 document.getElementById('message_input').value = ""
 
+                newMessage = {
+                    'Content': encodeURIComponent(text.trim()),
+                    'ChatId': this.chat_id
+                }
+                
                 await fetch("/chat/send", {
                     method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'content': encodeURIComponent(text.trim()),
-                        'chatId': this.chat_id
-                    }
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(newMessage)
+                    
                 })
 
                 this.updateMessages()
@@ -133,13 +137,14 @@
                 hubConnection.invoke("Send", text)
             },
             findUser: async function () {
+                let userSearch = document.getElementById('user_search_input').value
                 await fetch('/chat/find', {
-                    method: 'GET',
+                    method: 'POST',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json',
-                        'userSearch': document.getElementById('user_search_input').value
+                        'Content-Type': 'application/json'
                     },
+                    body: JSON.stringify(userSearch)
                 })
                     .then(async data => {
                         let response = await data.text()
