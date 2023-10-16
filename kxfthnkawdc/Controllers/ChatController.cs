@@ -154,7 +154,7 @@ public class ChatController : ControllerBase
         {
             using var createChatCommand = _dbContext.DataSource.CreateCommand(
                 "INSERT INTO chats (first_user_id, second_user_id) VALUES (@client_id, @found_user);" +
-                "SELECT id FROM chats WHERE second_user_id = @found_user");
+                "SELECT id FROM chats WHERE first_user_id = @client_id AND second_user_id = @found_user");
             createChatCommand.Parameters.AddWithValue("client_id", ClientId);
             createChatCommand.Parameters.AddWithValue("found_user", userId);
             using var reader = createChatCommand.ExecuteReader();

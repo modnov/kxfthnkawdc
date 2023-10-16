@@ -55,7 +55,7 @@ public class LoginController : ControllerBase
     [Route("register")]
     public string Register([FromBody] AuthDataModel authDataModel)
     {
-        string username = authDataModel.Username;
+        string username = authDataModel.Username.ToLower();
         string password = authDataModel.Password;
         if (IsAlreadyLogined)
             return "Success";

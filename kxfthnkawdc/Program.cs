@@ -45,6 +45,7 @@ app.Use((context, next) =>
         if (clientId != null)
         {
             context.Response.Headers.Add("client_id", clientId.ToString());
+            context.Response.Headers.Add("client_username", context.Session.GetString("username"));
         }
 
         return next.Invoke();

@@ -110,6 +110,11 @@
                     return
                 }
                 
+                if(document.getElementById('register_username').value.length > 24){
+                    document.getElementById('error_message').innerText = 'Username is too long'
+                    return
+                }
+                
                 resgisterData = {
                     'Username': document.getElementById('register_username').value,
                     'Password': document.getElementById('register_password').value
